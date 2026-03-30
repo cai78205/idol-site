@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>团体相册</title>
+
+    <!-- 图片弹窗样式 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Microsoft YaHei", sans-serif;
+            background: #f5f5f5;
+            color: #222;
+        }
+
+        .page-wrap {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 20px;
+        }
+
+        /* 活动横向导航 */
+        .event-tabs {
+            display: flex;
+            gap: 14px;
+            overflow-x: auto;
+            padding-bottom: 12px;
+            margin-bottom: 24px;
+            scrollbar-width: thin;
+        }
+
+        .event-tabs::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .event-tabs::-webkit-scrollbar-thumb {
+            background: #cfd8e3;
+            border-radius: 10px;
+        }
+
+        .event-tab {
+            flex: 0 0 auto;
+            padding: 10px 18px;
+            background: white;
+            border-radius: 999px;
+            border: 1px solid #d9e7f5;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+            font-size: 14px;
+        }
+
+        .event-tab.active {
+            background: #4facfe;
+            color: white;
+            border-color: #4facfe;
+        }
+
+        /* 每个活动面板 */
+        .event-panel {
+            display: none;
+        }
+
+        .event-panel.active {
+            display: block;
+        }
+
+        .event-header {
+            background: white;
+            border-radius: 18px;
+            padding: 18px 22px;
+            margin-bottom: 20px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+        }
+
+        .event-name {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .event-meta {
+            color: #666;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        /* 图片网格 */
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 18px;
+        }
+
+        .photo-card {
+            background: white;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+            transition: 0.2s;
+        }
+
+        .photo-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .photo-card a {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 320px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .photo-body {
+            padding: 14px 16px;
+        }
+
+        .photo-caption {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.5;
+            color: #222;
+        }
+
+        .photo-members {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.7;
+        }
+
+        .empty-box {
+            background: white;
+            border-radius: 18px;
+            padding: 60px 20px;
+            text-align: center;
+            color: #888;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+        }
+
+        .top-back {
+            display: inline-block;
+            margin-bottom: 18px;
+            text-decoration: none;
+            color: #4facfe;
+            font-weight: 600;
+        }
+
+        .top-back:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .page-wrap {
+                padding: 16px;
+            }
+
+            .page-title {
+                font-size: 26px;
+            }
+
+            .event-name {
+                font-size: 20px;
+            }
+
+            .photo-grid {
+                grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+                gap: 12px;
+            }
+
+            .photo-card img {
+                height: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrap">
+        <a href="/" class="top-back">← 返回首页</a>
+
+        <div class="page-title">📸 团体相册</div>
+
+        {% if events %}
+            <!-- 活动横向切换 -->
+            <div class="event-tabs">
+                {% for event in events %}
+                    <button
+                        class="event-tab {% if forloop.first %}active{% endif %}"
+                        data-index="{{ forloop.counter0 }}"
+                        onclick="showEvent(this.dataset.index)">
+                        {{ event.title }}
+                    </button>
+                {% endfor %}
+            </div>
+
+            <!-- 活动内容 -->
+            {% for event in events %}
+                <div class="event-panel {% if forloop.first %}active{% endif %}">
+                    <div class="event-header">
+                        <div class="event-name">{{ event.title }}</div>
+                        <div class="event-meta">
+                            {% if event.date %}
+                                {{ event.date|date:"Y年n月j日" }}
+                            {% else %}
+                                未填写日期
+                            {% endif %}
+                            <br>
+                            共 {{ event.photos.count }} 张图片
+                        </div>
+                    </div>
+
+                    {% if event.photos.all %}
+                        <div class="photo-grid">
+                            {% for photo in event.photos.all %}
+                                <div class="photo-card">
+                                    <a href="{{ photo.image.url }}"
+                                       data-fancybox="event-{{ forloop.parentloop.counter0 }}"
+                                       data-caption="{% if photo.caption %}{{ photo.caption }}{% else %}{{ event.title }}{% endif %}">
+                                        <img src="{{ photo.image.url }}" alt="{{ event.title }}">
+                                    </a>
+
+                                    <div class="photo-body">
+                                        <div class="photo-caption">
+                                            {% if photo.caption %}
+                                                {{ photo.caption }}
+                                            {% else %}
+                                                {{ event.title }}
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="photo-members">
+                                            {% if photo.members.all %}
+                                                相关成员：
+                                                {% for member in photo.members.all %}
+                                                    {{ member.stage_name }}{% if not forloop.last %}、{% endif %}
+                                                {% endfor %}
+                                            {% else %}
+                                                未关联成员
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-box">这个活动还没有图片</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-box">还没有创建任何活动</div>
+        {% endif %}
+    </div>
+
+    <!-- 图片弹窗脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+
+    <script>
+        function showEvent(index) {
+            index = parseInt(index);
+
+            const tabs = document.querySelectorAll('.event-tab');
+            const panels = document.querySelectorAll('.event-panel');
+
+            tabs.forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+            });
+
+            panels.forEach((panel, i) => {
+                panel.classList.toggle('active', i === index);
+            });
+        }
+
+        Fancybox.bind("[data-fancybox]", {
+            Hash: false,
+            Thumbs: {
+                autoStart: false
+            }
+        });
+    </script>
+</body>
+</html>
+

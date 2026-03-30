@@ -1,0 +1,2093 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-hans">
+<head>
+    <meta charset="UTF-8">
+    <title>Pickus 官方百科站</title>
+
+    <!-- Bootstrap 样式 -->
+    <link href="{% static 'wiki/css/bootstrap.min.css' %}" rel="stylesheet">
+
+    <style>
+        /* =========================
+           一、页面基础样式
+        ========================= */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        /* =========================
+           二、顶部横幅区域
+        ========================= */
+        .hero {
+            background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 70px 0;
+        }
+
+        /* =========================
+           三、成员卡片区域
+        ========================= */
+        .idol-card {
+            border: none;
+            border-radius: 20px;
+            transition: 0.3s;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .idol-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .member-img {
+            height: 350px;
+            object-fit: cover;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+        }
+
+        /* =========================
+           四、通用空状态提示
+        ========================= */
+        .empty-box {
+            background: #fff;
+            border-radius: 18px;
+            padding: 30px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+        }
+
+        /* =========================
+           五、专辑板块
+        ========================= */
+        .discography-title {
+            font-weight: 700;
+            margin-bottom: 40px;
+        }
+
+        /* 专辑封面卡片 */
+        .album-card {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            background: #eee;
+        }
+
+        .album-cover {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+            display: block;
+        }
+
+        /* 鼠标移入专辑封面时显示歌单 */
+        .album-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(79, 172, 254, 0.92);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            padding: 20px;
+            z-index: 2;
+        }
+
+        .album-card:hover .album-overlay {
+            opacity: 1;
+        }
+
+        .album-card:hover .album-cover {
+            transform: scale(1.08);
+        }
+
+        .tracklist {
+            font-size: 0.92rem;
+            text-align: left;
+            width: 100%;
+        }
+
+        .tracklist h6 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+        }
+
+        .tracklist li {
+            margin-bottom: 6px;
+        }
+
+        /* 专辑标题信息 */
+        .album-info {
+            margin-top: 14px;
+        }
+
+        .album-link {
+            position: relative;
+            display: inline-block;
+            text-decoration: none;
+            color: #222;
+            font-weight: 700;
+            transition: color 0.3s ease;
+        }
+
+        .album-link:hover {
+            color: #4facfe;
+        }
+
+        /* 鼠标滑到专辑名称时显示试听提示 */
+        .play-hint {
+            display: block;
+            font-size: 12px;
+            color: #4facfe;
+            opacity: 0;
+            transform: translateY(4px);
+            transition: all 0.3s ease;
+            margin-top: 4px;
+        }
+
+        .album-link:hover .play-hint {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .album-scroll-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 12px;
+    scrollbar-width: thin;
+    scroll-behavior: smooth;
+}
+
+.album-scroll-wrap::-webkit-scrollbar {
+    height: 8px;
+}
+
+.album-scroll-wrap::-webkit-scrollbar-thumb {
+    background: #cfd8e3;
+    border-radius: 10px;
+}
+
+.album-scroll {
+    display: flex;
+    gap: 20px;
+    min-width: max-content;
+}
+
+.album-scroll-item {
+    width: 260px;
+    flex: 0 0 260px;
+}
+
+
+        /* =========================
+           六、官方物料系列板块
+        ========================= */
+        .media-section-title {
+            font-weight: 700;
+            margin-top: 20px;
+            margin-bottom: 25px;
+            color: #222;
+        }
+
+        /* 大分类标题，例如：MV / 综艺 / 短视频 */
+        .media-category-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #4facfe;
+            border-left: 5px solid #4facfe;
+            padding-left: 12px;
+            margin: 30px 0 20px;
+        }
+
+        /* 只让官方物料内容区上下滚动，标题不滚动 */
+        .media-section-scroll {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 10px;
+            scroll-behavior: smooth;
+        }
+
+        .media-section-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .media-section-scroll::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+
+        /* 每个大分类的一整块 */
+        .media-series-block {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        /* 横向滚动外层 */
+        .media-scroll-wrap {
+            position: relative;
+        }
+
+        /* 横向滑动内容区 */
+        .media-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 18px;
+            padding: 8px 6px 14px;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+        }
+
+        .media-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .media-scroll::-webkit-scrollbar-thumb {
+            background: #4facfe;
+            border-radius: 10px;
+        }
+
+        /* 每张官方物料系列卡片固定宽度 */
+        .media-scroll-item {
+            flex: 0 0 260px;
+        }
+
+        .media-card {
+            background: #fff;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+            transition: 0.3s;
+            height: 100%;
+        }
+
+        .media-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .media-cover-wrap {
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .media-cover {
+            width: 100%;
+            height: 240px;
+            object-fit: cover;
+            display: block;
+            transition: 0.35s;
+        }
+
+        .media-card:hover .media-cover {
+            transform: scale(1.06);
+        }
+
+        /* 封面 hover 播放遮罩 */
+        .media-play-mask {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: 0.3s;
+        }
+
+        .media-card:hover .media-play-mask {
+            opacity: 1;
+        }
+
+        .media-play-icon {
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.92);
+            color: #4facfe;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .media-body {
+            padding: 15px;
+        }
+
+        .media-item-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #222;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .media-meta {
+            font-size: 0.88rem;
+            color: #888;
+            margin-bottom: 0;
+        }
+
+        .media-desc {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 8px;
+            margin-bottom: 0;
+            line-height: 1.6;
+        }
+
+        /* 左右箭头按钮 */
+        .media-arrow {
+            position: absolute;
+            top: 45%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.95);
+            color: #4facfe;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+            z-index: 5;
+            transition: 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .media-arrow:hover {
+            background: #4facfe;
+            color: white;
+        }
+
+        .media-arrow-left {
+            left: -12px;
+        }
+
+        .media-arrow-right {
+            right: -12px;
+        }
+
+                /* =========================
+           七、团体相册板块
+        ========================= */
+   
+        .gallery-header-wrap {
+            margin-bottom: 24px;
+        }
+
+        .gallery-section-title {
+            font-weight: 800;
+            color: #222;
+            font-size: 2.2rem;
+            letter-spacing: 0.3px;
+        }
+
+        .gallery-category-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #4facfe;
+            border-left: 5px solid #4facfe;
+            padding-left: 14px;
+            margin-bottom: 20px;
+        }
+
+        .gallery-scroll-wrap {
+            position: relative;
+        }
+
+        .gallery-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 20px;
+            padding: 8px 6px 14px;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+        }
+
+        .gallery-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .gallery-scroll::-webkit-scrollbar-thumb {
+            background: #4facfe;
+            border-radius: 10px;
+        }
+
+        .gallery-scroll-item {
+            flex: 0 0 300px;
+        }
+
+        .gallery-card {
+            background: #fff;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+            transition: 0.3s;
+            height: 100%;
+        }
+
+        .gallery-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .gallery-cover {
+            width: 100%;
+            height: 270px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .gallery-body {
+            padding: 16px;
+        }
+
+        .gallery-item-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #222;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .gallery-meta {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 0;
+            line-height: 1.7;
+        }
+
+        .gallery-arrow {
+            position: absolute;
+            top: 42%;
+            transform: translateY(-50%);
+            width: 48px;
+            height: 48px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.96);
+            color: #4facfe;
+            font-size: 28px;
+            font-weight: bold;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+            z-index: 5;
+            transition: 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gallery-arrow:hover {
+            background: #4facfe;
+            color: white;
+        }
+
+        .gallery-arrow-left {
+            left: -14px;
+        }
+
+        .gallery-arrow-right {
+            right: -14px;
+        }
+
+                /* =========================
+           八.团体相册整体模块：限定高度，不让页面无限拉长
+        ========================= */
+        .gallery-module-wrap {
+            background: transparent;
+        }
+
+        .gallery-module-scroll {
+            max-height: 500px;   /* 你可以调成 800 / 900 / 1000 */
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 8px;
+            scrollbar-width: thin;
+            scroll-behavior: smooth;
+        }
+
+        .gallery-module-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .gallery-module-scroll::-webkit-scrollbar-thumb {
+            background: #cfd8e3;
+            border-radius: 10px;
+        }
+
+        .china-account-wrap {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.china-account-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #fff;
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+    transition: 0.25s;
+    color: inherit;
+}
+
+.china-account-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.china-account-avatar-wrap {
+    flex-shrink: 0;
+}
+
+.china-account-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #eef4fb;
+}
+
+.china-account-avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #4facfe;
+}
+
+.china-account-body {
+    min-width: 0;
+}
+
+.china-account-platform {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #4facfe;
+    margin-bottom: 4px;
+}
+
+.china-account-name {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #222;
+    word-break: break-word;
+}
+
+@media (max-width: 992px) {
+    .china-account-wrap {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 576px) {
+    .china-account-wrap {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+
+
+                /* =========================
+           九、团体行程时间轴
+        ========================= */
+        .schedule-section-title {
+            font-weight: 800;
+            color: #222;
+            font-size: 2.1rem;
+            letter-spacing: 0.3px;
+        }
+
+        .schedule-timeline-box {
+            background: #fff;
+            border-radius: 24px;
+            padding: 30px 26px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.05);
+        }
+
+        .schedule-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+            position: relative;
+        }
+
+        .schedule-item:not(:last-child) {
+            margin-bottom: 24px;
+        }
+
+        .schedule-dot-wrap {
+            width: 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .schedule-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-top: 4px;
+        }
+
+        .schedule-dot.past {
+            background: #0d3b66;
+        }
+
+        .schedule-dot.current {
+            background: #2196f3;
+            box-shadow: 0 0 0 6px rgba(33, 150, 243, 0.15);
+        }
+
+        .schedule-dot.upcoming {
+            background: #8ec9ff;
+        }
+
+        .schedule-line {
+            width: 3px;
+            flex: 1;
+            background: linear-gradient(to bottom, #d8e8f8, #edf4fb);
+            margin-top: 8px;
+            min-height: 70px;
+            border-radius: 10px;
+        }
+
+        .schedule-card {
+            flex: 1;
+            background: #f8fbff;
+            border: 1px solid #e3eef8;
+            border-radius: 18px;
+            padding: 18px 20px;
+            transition: 0.25s;
+        }
+
+        .schedule-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+        }
+
+        .schedule-date {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #4facfe;
+            margin-bottom: 8px;
+        }
+
+        .schedule-title {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #222;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .schedule-meta {
+            font-size: 0.95rem;
+            color: #666;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        .schedule-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .schedule-type-tag,
+        .schedule-status-tag {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .schedule-type-tag {
+            background: #eef6ff;
+            color: #3f83c5;
+        }
+
+        .schedule-status-tag.past {
+            background: #e7eef6;
+            color: #0d3b66;
+        }
+
+        .schedule-status-tag.current {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .schedule-status-tag.upcoming {
+            background: #edf7ff;
+            color: #4facfe;
+        }
+
+        .schedule-desc {
+            font-size: 0.92rem;
+            color: #666;
+            line-height: 1.8;
+        }
+
+        /* =========================
+   团体行程：横向滚动卡片
+========================= */
+.schedule-section-title {
+    font-weight: 800;
+    color: #222;
+    font-size: 2.1rem;
+    letter-spacing: 0.3px;
+}
+
+.schedule-rail-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 12px;
+    scrollbar-width: thin;
+    scroll-behavior: smooth;
+}
+
+.schedule-rail-wrap::-webkit-scrollbar {
+    height: 8px;
+}
+
+.schedule-rail-wrap::-webkit-scrollbar-thumb {
+    background: #cfd8e3;
+    border-radius: 10px;
+}
+
+.schedule-rail {
+    display: flex;
+    gap: 18px;
+    min-width: max-content;
+}
+
+.schedule-card-mini {
+    width: 320px;
+    flex: 0 0 320px;
+    background: #f8fbff;
+    border: 1px solid #e3eef8;
+    border-radius: 18px;
+    padding: 18px 18px 16px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.04);
+    transition: 0.25s;
+}
+
+.schedule-card-mini:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.07);
+}
+
+.schedule-date-mini {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #4facfe;
+    margin-bottom: 10px;
+}
+
+.schedule-title-mini {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #222;
+    margin-bottom: 8px;
+    line-height: 1.45;
+}
+
+.schedule-meta-mini {
+    font-size: 0.92rem;
+    color: #666;
+    line-height: 1.7;
+    margin-bottom: 12px;
+}
+
+.schedule-tags-mini {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+
+                /* =========================
+           九、世界地图模块
+        ========================= */
+        .map-section-title {
+            font-weight: 800;
+            color: #222;
+            font-size: 2.1rem;
+            letter-spacing: 0.3px;
+        }
+
+        .map-module-box {
+            background: #fff;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.05);
+        }
+
+        .map-legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .legend-dot.past {
+            background: #0d3b66;
+        }
+
+        .legend-dot.current {
+            background: #2196f3;
+        }
+
+        .legend-dot.upcoming {
+            background: #8ec9ff;
+        }
+
+        #schedule-world-map {
+            width: 100%;
+            height: 620px;
+        }
+
+        @media (max-width: 768px) {
+            #schedule-world-map {
+                height: 420px;
+            }
+        
+        }
+
+      .map-schedule-panel {
+    margin-top: 20px;
+    background: #f8fbff;
+    border: 1px solid #dbe9f6;
+    border-radius: 18px;
+    padding: 18px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.map-schedule-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.map-schedule-panel-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #222;
+}
+
+.map-schedule-close-btn {
+    border: none;
+    background: #e7f1fb;
+    color: #3f83c5;
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.map-schedule-close-btn:hover {
+    background: #4facfe;
+    color: white;
+}
+
+.map-schedule-rail-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+    scroll-behavior: smooth;
+    box-sizing: border-box;
+}
+
+.map-schedule-rail-wrap::-webkit-scrollbar {
+    height: 8px;
+}
+
+.map-schedule-rail-wrap::-webkit-scrollbar-thumb {
+    background: #cfd8e3;
+    border-radius: 10px;
+}
+
+.map-schedule-rail {
+    display: flex;
+    gap: 14px;
+    width: max-content;
+    min-width: 100%;
+}
+
+.map-schedule-item {
+    width: 300px;
+    flex: 0 0 300px;
+    background: #fff;
+    border: 1px solid #e7eef6;
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-sizing: border-box;
+}
+
+.map-schedule-date {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #4facfe;
+    margin-bottom: 6px;
+}
+
+.map-schedule-name {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #222;
+    margin-bottom: 6px;
+}
+
+.map-schedule-meta {
+    font-size: 0.92rem;
+    color: #666;
+    line-height: 1.7;
+}
+
+.map-status-badge {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.map-status-badge.past {
+    background: #e7eef6;
+    color: #0d3b66;
+}
+
+.map-status-badge.current {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.map-status-badge.upcoming {
+    background: #edf7ff;
+    color: #4facfe;
+}
+
+
+
+        /* =========================
+        十.Pikus 烤炉
+        ========================= */
+.grill-module-box {
+    background: #fff;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.05);
+}
+
+.grill-module-scroll {
+    max-height: 700px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scroll-behavior: smooth;
+}
+
+.grill-module-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.grill-module-scroll::-webkit-scrollbar-thumb {
+    background: #cfd8e3;
+    border-radius: 10px;
+}
+
+.grill-subsection {
+    margin-bottom: 36px;
+}
+
+.grill-subsection:last-child {
+    margin-bottom: 0;
+}
+
+.grill-subsection-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #4facfe;
+    border-left: 5px solid #4facfe;
+    padding-left: 14px;
+    margin-bottom: 18px;
+}
+
+.grill-row-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 10px;
+    scrollbar-width: thin;
+    scroll-behavior: smooth;
+}
+
+.grill-row-wrap::-webkit-scrollbar {
+    height: 8px;
+}
+
+.grill-row-wrap::-webkit-scrollbar-thumb {
+    background: #cfd8e3;
+    border-radius: 10px;
+}
+
+.grill-row {
+    display: flex;
+    gap: 18px;
+    min-width: max-content;
+}
+
+.grill-card {
+    width: 300px;
+    flex: 0 0 300px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #f8fbff;
+    border: 1px solid #e3eef8;
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.04);
+    transition: 0.25s;
+    color: inherit;
+}
+
+.grill-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+}
+
+.grill-card-avatar-wrap {
+    flex-shrink: 0;
+}
+
+.grill-card-avatar {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #eef4fb;
+}
+
+.grill-card-avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #4facfe;
+}
+
+.grill-card-body {
+    min-width: 0;
+}
+
+.grill-card-platform {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #4facfe;
+    margin-bottom: 4px;
+}
+
+.grill-card-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #222;
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+
+.grill-card-account {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 6px;
+}
+
+.grill-card-desc {
+    font-size: 0.88rem;
+    color: #777;
+    line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+    .grill-module-scroll {
+        max-height: 620px;
+    }
+
+    .grill-card {
+        width: 260px;
+        flex: 0 0 260px;
+    }
+}
+
+.grill-reaction-card {
+    width: 320px;
+    flex: 0 0 320px;
+    display: block;
+    padding: 0;
+    overflow: hidden;
+}
+
+.grill-reaction-cover-wrap {
+    width: 100%;
+}
+
+.grill-reaction-cover {
+    width: 100%;
+    height: 190px;
+    object-fit: cover;
+    display: block;
+    background: #eef4fb;
+}
+
+.grill-reaction-cover-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #4facfe;
+}
+
+.grill-reaction-card .grill-card-body {
+    padding: 16px;
+}
+
+@media (max-width: 768px) {
+    .grill-reaction-card {
+        width: 270px;
+        flex: 0 0 270px;
+    }
+
+    .grill-reaction-cover {
+        height: 170px;
+    }
+}
+
+
+
+
+
+        /* =========================
+           十一、移动端适配
+        ========================= */
+        @media (max-width: 768px) {
+            .hero {
+                padding: 50px 0;
+            }
+
+            .member-img {
+                height: 280px;
+            }
+
+            .media-arrow {
+                width: 38px;
+                height: 38px;
+                font-size: 20px;
+            }
+
+            .media-arrow-left {
+                left: -6px;
+            }
+
+            .media-arrow-right {
+                right: -6px;
+            }
+
+            .media-scroll-item {
+                flex: 0 0 220px;
+            }
+
+            .media-section-scroll {
+                max-height: 520px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- =========================
+         一、顶部横幅
+    ========================= -->
+    <div class="hero text-center">
+        <div class="container">
+            <h1 class="display-3 fw-bold">{{ group.name|default:"Pickus" }}</h1>
+            <p class="lead mb-0">欢迎来到 Pickus 的百科全书！</p>
+        </div>
+    </div>
+
+    <!-- =========================
+         二、成员列表
+    ========================= -->
+    <div class="container mt-5">
+        <div class="row">
+            {% for m in members %}
+            <div class="col-md-3 mb-4">
+                <div class="card idol-card h-100">
+                    {% if m.photo %}
+                        <img src="{{ m.photo.url }}" class="card-img-top member-img" alt="{{ m.stage_name }}" loading="lazy">
+                    {% endif %}
+
+                    <div class="card-body text-center">
+                        <h4 class="fw-bold">{{ m.stage_name }}</h4>
+                        <p class="text-primary mb-3">{{ m.position }}</p>
+                        <a href="{% url 'member_detail' m.pk %}" class="btn btn-primary rounded-pill px-4">
+                            进入个人百科
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="empty-box text-center text-muted">
+                    还没有成员资料，快去后台添加吧。
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- =========================
+         三、专辑板块
+    ========================= -->
+    <div class="container mt-5 mb-5">
+    <h2 class="text-center discography-title">💿 Discography (作品年表)</h2>
+
+    {% if albums %}
+    <div class="album-scroll-wrap">
+        <div class="album-scroll">
+            {% for album in albums %}
+            <div class="album-scroll-item text-center">
+                <!-- 专辑封面 -->
+                <div class="album-card">
+                    {% if album.cover %}
+                        <img src="{{ album.cover.url }}" class="album-cover" alt="{{ album.title }}" loading="lazy">
+                    {% endif %}
+
+                    <!-- 鼠标移入专辑封面时显示歌曲列表 -->
+                    <div class="album-overlay">
+                        <div class="tracklist">
+                            <h6 class="fw-bold">Tracklist:</h6>
+                            <ul class="list-unstyled mb-0">
+                                {% for song in album.songs.all %}
+                                    <li>{{ song.order }}. {{ song.title }}</li>
+                                {% empty %}
+                                    <li>暂未添加曲目</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 专辑信息 -->
+                <div class="album-info">
+                    <h5 class="mb-1">
+                        {% if album.music_url or album.preview_audio %}
+                            <a href="{% if album.music_url %}{{ album.music_url }}{% else %}javascript:void(0);{% endif %}"
+                               {% if album.music_url %}target="_blank"{% endif %}
+                               class="album-link"
+                               onmouseenter="playPreview(this)"
+                               onmouseleave="stopPreview()"
+                               data-audio="{% if album.preview_audio %}{{ album.preview_audio.url }}{% endif %}"
+                               data-start="{{ album.preview_start }}"
+                               data-duration="{{ album.preview_duration }}">
+                                {{ album.title }}
+                                <span class="play-hint">▶ 鼠标滑过试听</span>
+                            </a>
+                        {% else %}
+                            <span class="fw-bold">{{ album.title }}</span>
+                        {% endif %}
+                    </h5>
+                    <small class="text-muted">{{ album.release_date }}</small>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-box text-center text-muted">
+        还没有专辑资料，去后台添加第一张专辑吧。
+    </div>
+    {% endif %}
+</div>
+
+
+    <!-- =========================
+         四、官方物料系列板块
+         说明：
+         1. 标题固定
+         2. 下面内容区上下滚动
+         3. 每个大分类内部横向滑动
+    ========================= -->
+    <div class="container mt-5 mb-5">
+        <h2 class="text-center media-section-title">🎬 Official Media (官方物料)</h2>
+
+        <!-- 只有内容部分上下滚动 -->
+        <div class="media-section-scroll">
+
+            {% regroup media_series by get_category_display as media_category_list %}
+
+            {% for category in media_category_list %}
+                <!-- 大分类标题，例如 MV / 综艺 / 短视频 -->
+                <div class="media-category-title">{{ category.grouper }}</div>
+
+                <div class="media-series-block">
+                    <div class="media-scroll-wrap">
+                        <!-- 左箭头 -->
+                        <button class="media-arrow media-arrow-left"
+                                type="button"
+                                onclick="scrollMedia('media-category-scroll-{{ forloop.counter }}', -1)">
+                            ‹
+                        </button>
+
+                        <!-- 横向滚动区域 -->
+                        <div class="media-scroll" id="media-category-scroll-{{ forloop.counter }}">
+                            {% for series in category.list %}
+                            <div class="media-scroll-item">
+                                <!-- 点击进入该系列详情页 -->
+                                <a href="{% url 'media_series_detail' series.pk %}" class="text-decoration-none">
+                                    <div class="media-card">
+                                        <div class="media-cover-wrap">
+                                            {% if series.cover %}
+                                                <img src="{{ series.cover.url }}" class="media-cover" alt="{{ series.title }}" loading="lazy">
+                                            {% endif %}
+
+                                            <!-- hover 播放图标遮罩 -->
+                                            <div class="media-play-mask">
+                                                <div class="media-play-icon">▶</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="media-body">
+                                            <!-- 系列名称 -->
+                                            <div class="media-item-title">{{ series.title }}</div>
+
+                                            <!-- 系列下内容条数 -->
+                                            <p class="media-meta">
+                                                共 {{ series.items.count }} 条内容
+                                            </p>
+
+                                            <!-- 系列简介（过长自动截断） -->
+                                            {% if series.description %}
+                                                <p class="media-desc">{{ series.description|truncatechars:60 }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- 右箭头 -->
+                        <button class="media-arrow media-arrow-right"
+                                type="button"
+                                onclick="scrollMedia('media-category-scroll-{{ forloop.counter }}', 1)">
+                            ›
+                        </button>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-box text-center text-muted">
+                    还没有官方物料系列，去后台添加吧。
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+        <!-- =========================
+         五、团体相册板块
+         说明：
+         1. 首页展示活动卡片
+         2. 横向滚动，风格和 Official Media 保持一致
+         3. 点击卡片进入总相册页
+    ========================= -->
+    
+    <div class="container mt-5 mb-5 gallery-module-wrap">
+        <div class="d-flex justify-content-center align-items-center position-relative mb-4 gallery-header-wrap">
+            <h2 class="gallery-section-title mb-0">📸 Group Gallery（团体相册）</h2>
+            <a href="{% url 'gallery' %}" class="btn btn-outline-primary rounded-pill px-4 position-absolute end-0">
+                查看全部
+            </a>
+        </div>
+
+        {% if grouped_events %}
+    <div class="gallery-module-scroll">
+        {% for group_item in grouped_events %}
+            <div class="mb-5">
+                <h3 class="gallery-category-title">{{ group_item.label }}</h3>
+
+                <div class="gallery-scroll-wrap">
+                    <!-- 左箭头 -->
+                    <button class="gallery-arrow gallery-arrow-left"
+                            type="button"
+                            onclick="scrollGallery('gallery-row-{{ forloop.counter }}', -1)">
+                        ‹
+                    </button>
+
+                    <!-- 横向滚动区域 -->
+                    <div class="gallery-scroll" id="gallery-row-{{ forloop.counter }}">
+                        {% for event in group_item.items %}
+                        <div class="gallery-scroll-item">
+                            <a href="{% url 'gallery' %}?event={{ event.id }}" class="text-decoration-none">
+                                <div class="gallery-card">
+                                    {% if event.cover %}
+                                        <img src="{{ event.cover.url }}" class="gallery-cover" alt="{{ event.title }}">
+                                    {% else %}
+                                        <div class="d-flex align-items-center justify-content-center bg-light"
+                                             style="height: 240px; color: #999;">
+                                            暂无封面
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="gallery-body">
+                                        <div class="gallery-item-title">{{ event.title }}</div>
+
+                                        <p class="gallery-meta mb-1">
+                                            {% if event.date %}
+                                                {{ event.date|date:"Y年n月j日" }}
+                                            {% else %}
+                                                未填写日期
+                                            {% endif %}
+                                        </p>
+
+                                        <p class="gallery-meta">
+                                            共 {{ event.photos.count }} 张图片
+                                        </p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- 右箭头 -->
+                    <button class="gallery-arrow gallery-arrow-right"
+                            type="button"
+                            onclick="scrollGallery('gallery-row-{{ forloop.counter }}', 1)">
+                        ›
+                    </button>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-box text-center text-muted">
+        还没有创建任何活动，去后台添加活动和活动图片吧。
+    </div>
+{% endif %}
+</div>
+
+<!-- =========================
+     六.中国平台官方账号
+========================= -->
+<div class="container mt-5 mb-5">
+    <div class="d-flex justify-content-center align-items-center position-relative mb-4">
+        <h2 class="map-section-title mb-0">📱 China Official Accounts（中国平台账号）</h2>
+    </div>
+
+    {% if china_social_accounts %}
+    <div class="china-account-wrap">
+        {% for account in china_social_accounts %}
+        <a href="{{ account.profile_url }}" target="_blank" class="china-account-card text-decoration-none">
+            <div class="china-account-avatar-wrap">
+                {% if account.avatar %}
+                    <img src="{{ account.avatar.url }}" class="china-account-avatar" alt="{{ account.account_name }}" loading="lazy">
+                {% else %}
+                    <div class="china-account-avatar china-account-avatar-placeholder">
+                        {{ account.get_platform_display|slice:":2" }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="china-account-body">
+                <div class="china-account-platform">{{ account.get_platform_display }}</div>
+                <div class="china-account-name">{{ account.account_name }}</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-box text-center text-muted">
+        还没有添加中国平台账号。
+    </div>
+    {% endif %}
+</div>
+
+
+
+
+    <!-- =========================
+     七.Schedule Timeline（团体行程）
+========================= -->
+<div class="container mt-5 mb-5">
+    <div class="d-flex justify-content-center align-items-center position-relative mb-4">
+        <h2 class="schedule-section-title mb-0">🗓️ Schedule Timeline（团体行程）</h2>
+    </div>
+
+    {% if schedules %}
+    <div class="schedule-rail-wrap">
+        <div class="schedule-rail">
+            {% for item in schedules %}
+            <div class="schedule-card-mini">
+                <div class="schedule-date-mini">
+                    {{ item.date|date:"Y年n月j日" }}
+                </div>
+
+                <div class="schedule-title-mini">
+                    {{ item.title }}
+                </div>
+
+                <div class="schedule-meta-mini">
+                    {{ item.city }}, {{ item.country }}
+                    {% if item.venue %}
+                        · {{ item.venue }}
+                    {% endif %}
+                </div>
+
+                <div class="schedule-tags-mini">
+                    <span class="schedule-type-tag">{{ item.get_schedule_type_display }}</span>
+
+                    {% if item.status == 'past' %}
+                        <span class="schedule-status-tag past">已结束</span>
+                    {% elif item.status == 'current' %}
+                        <span class="schedule-status-tag current">进行中</span>
+                    {% elif item.status == 'upcoming' %}
+                        <span class="schedule-status-tag upcoming">即将开始</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-box text-center text-muted">
+        还没有添加任何团体行程。
+    </div>
+    {% endif %}
+</div>
+
+
+        <!-- =========================
+         八.World Map（世界地图）
+    ========================= -->
+    <div class="container mt-5 mb-5">
+        <div class="d-flex justify-content-center align-items-center position-relative mb-4">
+            <h2 class="map-section-title mb-0">🌍 World Tour Map（行程地图）</h2>
+        </div>
+
+       <div class="map-module-box">
+    <div class="map-legend">
+        <span class="legend-item">
+            <span class="legend-dot past"></span> 已去过
+        </span>
+        <span class="legend-item">
+            <span class="legend-dot current"></span> 进行中
+        </span>
+        <span class="legend-item">
+            <span class="legend-dot upcoming"></span> 即将去
+        </span>
+    </div>
+
+    <div id="schedule-world-map" style="width:100%; height:500px;"></div>
+
+    <div id="map-schedule-panel" class="map-schedule-panel" style="display:none;">
+    <div class="map-schedule-panel-header">
+        <div class="map-schedule-panel-title">行程详情</div>
+        <button id="map-schedule-close" class="map-schedule-close-btn" type="button">关闭</button>
+    </div>
+
+    <div class="map-schedule-rail-wrap">
+        <div id="map-schedule-list" class="map-schedule-rail"></div>
+    </div>
+</div>
+
+
+    </div>
+</div>    
+
+    <!-- =========================
+     九.Pickus烤炉
+========================= -->
+<div class="container mt-5 mb-5">
+    <div class="d-flex justify-content-center align-items-center position-relative mb-4">
+        <h2 class="map-section-title mb-0">🔥 Pickus烤炉</h2>
+    </div>
+
+    <div class="grill-module-box">
+        <div class="grill-module-scroll">
+
+            <!-- 摆摊区 -->
+            <div class="grill-subsection">
+                <h3 class="grill-subsection-title">🍢 摆摊区</h3>
+
+                {% if fan_stations %}
+                <div class="grill-row-wrap">
+                    <div class="grill-row">
+                        {% for station in fan_stations %}
+                        <a href="{{ station.weibo_url }}" target="_blank" class="grill-card text-decoration-none">
+                            <div class="grill-card-avatar-wrap">
+                                {% if station.avatar %}
+                                    <img src="{{ station.avatar.url }}" class="grill-card-avatar" alt="{{ station.name }}" loading="lazy">
+                                {% else %}
+                                    <div class="grill-card-avatar grill-card-avatar-placeholder">摊</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="grill-card-body">
+                                <div class="grill-card-platform">微博站子</div>
+                                <div class="grill-card-title">{{ station.name }}</div>
+                                <div class="grill-card-account">@{{ station.weibo_name }}</div>
+
+                                {% if station.description %}
+                                <div class="grill-card-desc">{{ station.description }}</div>
+                                {% endif %}
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="empty-box text-center text-muted">
+                    还没有添加摆摊区站子。
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- 烧烤一下 -->
+            <div class="grill-subsection">
+    <h3 class="grill-subsection-title">🔥 烧烤一下！</h3>
+
+    {% if fan_reactions %}
+    <div class="grill-row-wrap">
+        <div class="grill-row">
+            {% for item in fan_reactions %}
+            <a href="{{ item.source_url }}" target="_blank" class="grill-card grill-reaction-card text-decoration-none">
+                <div class="grill-reaction-cover-wrap">
+                    {% if item.cover %}
+                        <img src="{{ item.cover.url }}" class="grill-reaction-cover" alt="{{ item.title }}" loading="lazy">
+                    {% else %}
+                        <div class="grill-reaction-cover grill-reaction-cover-placeholder">烤</div>
+                    {% endif %}
+                </div>
+
+                <div class="grill-card-body">
+                    <div class="grill-card-platform">{{ item.get_category_display }}</div>
+                    <div class="grill-card-title">{{ item.title }}</div>
+
+                    {% if item.summary %}
+                    <div class="grill-card-desc">{{ item.summary|truncatechars:80 }}</div>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-box text-center text-muted">
+        还没有添加“烧烤一下”内容。
+    </div>
+    {% endif %}
+</div>
+
+
+            <!-- 今日出炉 -->
+           <div class="grill-subsection">
+    <h3 class="grill-subsection-title">👗 今日出炉</h3>
+
+    {% if fan_ootds %}
+    <div class="grill-row-wrap">
+        <div class="grill-row">
+            {% for item in fan_ootds %}
+            <a href="{{ item.source_url }}" target="_blank" class="grill-card grill-reaction-card text-decoration-none">
+                <div class="grill-reaction-cover-wrap">
+                    {% if item.cover %}
+                        <img src="{{ item.cover.url }}" class="grill-reaction-cover" alt="{{ item.title }}" loading="lazy">
+                    {% else %}
+                        <div class="grill-reaction-cover grill-reaction-cover-placeholder">穿</div>
+                    {% endif %}
+                </div>
+
+                <div class="grill-card-body">
+                    <div class="grill-card-platform">OOTD / 应援穿搭</div>
+                    <div class="grill-card-title">{{ item.title }}</div>
+
+                    {% if item.summary %}
+                    <div class="grill-card-desc">{{ item.summary|truncatechars:80 }}</div>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-box text-center text-muted">
+        还没有添加“今日出炉”内容。
+    </div>
+    {% endif %}
+</div>
+
+
+            <!-- 出片啦 -->
+            <div class="grill-subsection">
+    <h3 class="grill-subsection-title">📸 出片啦！</h3>
+
+    {% if fan_photo_features %}
+    <div class="grill-row-wrap">
+        <div class="grill-row">
+            {% for item in fan_photo_features %}
+            <a href="{{ item.source_url }}" target="_blank" class="grill-card grill-reaction-card text-decoration-none">
+                <div class="grill-reaction-cover-wrap">
+                    {% if item.cover %}
+                        <img src="{{ item.cover.url }}" class="grill-reaction-cover" alt="{{ item.title }}" loading="lazy">
+                    {% else %}
+                        <div class="grill-reaction-cover grill-reaction-cover-placeholder">片</div>
+                    {% endif %}
+                </div>
+
+                <div class="grill-card-body">
+                    <div class="grill-card-platform">站姐 / 神图 / 摄影作品</div>
+                    <div class="grill-card-title">{{ item.title }}</div>
+
+                    {% if item.summary %}
+                    <div class="grill-card-desc">{{ item.summary|truncatechars:80 }}</div>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-box text-center text-muted">
+        还没有添加“出片啦”内容。
+    </div>
+    {% endif %}
+</div>
+
+
+        </div>
+    </div>
+</div>
+
+
+
+
+    <!-- =========================
+         六、隐藏音频播放器
+         用于专辑 hover 试听
+    ========================= -->
+    <audio id="previewPlayer"></audio>
+
+   <script src="{% static 'wiki/js/echarts.min.js' %}"></script>
+
+    <script>
+        /*
+            =========================
+            一、专辑 hover 试听功能
+            =========================
+            逻辑说明：
+            1. 鼠标滑到专辑名称时播放音频片段
+            2. 鼠标移开时停止播放
+            3. 支持设置开始秒数和试听时长
+        */
+        const player = document.getElementById("previewPlayer");
+        let stopTimer = null;
+
+        function playPreview(el) {
+            const audio = el.dataset.audio;
+            const start = parseInt(el.dataset.start || 0);
+            const duration = parseInt(el.dataset.duration || 15);
+
+            // 如果没有试听音频，直接不播放
+            if (!audio) return;
+
+            clearTimeout(stopTimer);
+
+            // 如果当前播放器不是这首音频，就切换音频源
+            if (!player.src || !player.src.endsWith(audio)) {
+                player.src = audio;
+            }
+
+            // 跳到指定开始秒数
+            player.currentTime = start;
+
+            // 播放音频
+            player.play().catch(() => {});
+
+            // 到指定时间后自动暂停
+            stopTimer = setTimeout(() => {
+                player.pause();
+            }, duration * 1000);
+        }
+
+        function stopPreview() {
+            player.pause();
+            player.currentTime = 0;
+            clearTimeout(stopTimer);
+        }
+
+        /*
+            =========================
+            二、官方物料横向滑动功能
+            =========================
+            逻辑说明：
+            1. 每个大分类有一个横向滚动容器
+            2. 点击左右箭头时，平滑滚动固定距离
+        */
+        function scrollMedia(id, direction) {
+            const container = document.getElementById(id);
+            if (!container) return;
+
+            const scrollAmount = 300;
+
+            container.scrollBy({
+                left: direction * scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+
+                /*
+            =========================
+            三、团体相册横向滑动功能 分类
+            =========================
+        */
+       function scrollGallery(id, direction) {
+    const container = document.getElementById(id);
+    if (!container) return;
+
+    const scrollAmount = 340;
+
+    container.scrollBy({
+        left: direction * scrollAmount,
+        behavior: 'smooth'
+    });
+}
+
+
+     /*
+        =========================
+        四、世界地图
+        =========================
+    */
+
+   document.addEventListener("DOMContentLoaded", function () {
+    const mapDom = document.getElementById("schedule-world-map");
+    if (!mapDom) return;
+
+    let loaded = false;
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !loaded) {
+                loaded = true;
+                observer.disconnect();
+                initWorldMap();
+            }
+        });
+    }, {
+        rootMargin: "200px"
+    });
+
+    observer.observe(mapDom);
+
+    function initWorldMap() {
+        const chart = echarts.init(mapDom);
+        const panel = document.getElementById("map-schedule-panel");
+        const panelList = document.getElementById("map-schedule-list");
+        const closeBtn = document.getElementById("map-schedule-close");
+
+        const rawPoints = JSON.parse('{{ schedule_map_points_json|escapejs }}');
+        const countryData = JSON.parse('{{ country_fill_data_json|escapejs }}');
+
+        const colorMap = {
+            past: '#0d3b66',
+            current: '#2196f3',
+            upcoming: '#8ec9ff'
+        };
+
+        const countryColorMap = {
+            past: '#a9d0f5',
+            current: '#5dade2',
+            upcoming: '#d4e6f8'
+        };
+
+        const points = rawPoints.map(item => ({
+            name: item.name,
+            title: item.title,
+            city: item.city,
+            country: item.country,
+            date: item.date,
+            status: item.status,
+            value: item.value,
+            itemStyle: {
+                color: colorMap[item.status] || '#8ec9ff'
+            }
+        }));
+
+        const countryRegions = countryData.map(item => ({
+            name: item.name,
+            itemStyle: {
+                areaColor: countryColorMap[item.status] || '#eef4fb'
+            },
+            emphasis: { disabled: true },
+            select: { disabled: true },
+            label: { show: false }
+        }));
+
+        fetch("/static/wiki/js/world.json")
+            .then(res => res.json())
+            .then(worldJson => {
+                echarts.registerMap("world", worldJson);
+
+                const option = {
+                    geo: {
+                        map: "world",
+                        roam: true,
+                        center: [60, 30],
+                        zoom: 2.3,
+                        selectedMode: false,
+                        layoutCenter: ['50%', '58%'],
+                        layoutSize: '115%',
+                        itemStyle: {
+                            areaColor: "#eef4fb",
+                            borderColor: "#999"
+                        },
+                        emphasis: { disabled: true },
+                        regions: countryRegions
+                    },
+                    series: [
+                        {
+                            name: 'Schedule',
+                            type: 'scatter',
+                            coordinateSystem: 'geo',
+                            data: points,
+                            symbolSize: 4,
+                            emphasis: { scale: true }
+                        }
+                    ]
+                };
+
+                chart.setOption(option);
+
+                setTimeout(() => {
+                    chart.resize();
+                }, 100);
+
+                window.addEventListener('resize', function () {
+                    chart.resize();
+                });
+
+                let activePointKey = null;
+
+                chart.on('click', function (params) {
+                    if (!params.data) return;
+
+                    const clickedCity = params.data.city;
+                    const clickedCountry = params.data.country;
+                    const clickedKey = `${clickedCity}__${clickedCountry}`;
+
+                    if (activePointKey === clickedKey && panel.style.display !== 'none') {
+                        panel.style.display = 'none';
+                        panelList.innerHTML = '';
+                        activePointKey = null;
+                        return;
+                    }
+
+                    const matchedSchedules = rawPoints.filter(item =>
+                        item.city === clickedCity && item.country === clickedCountry
+                    );
+
+                    if (!matchedSchedules.length) return;
+
+                    const statusTextMap = {
+                        past: '已结束',
+                        current: '进行中',
+                        upcoming: '即将开始'
+                    };
+
+                    panelList.innerHTML = matchedSchedules.map(item => `
+                        <div class="map-schedule-item">
+                            <div class="map-schedule-date">${item.date}</div>
+                            <div class="map-schedule-name">${item.title}</div>
+                            <div class="map-schedule-meta">${item.city}, ${item.country}</div>
+                            <span class="map-status-badge ${item.status}">
+                                ${statusTextMap[item.status] || '未分类'}
+                            </span>
+                        </div>
+                    `).join('');
+
+                    panel.style.display = 'block';
+                    activePointKey = clickedKey;
+                    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                });
+
+                closeBtn.addEventListener('click', function () {
+                    panel.style.display = 'none';
+                    panelList.innerHTML = '';
+                    activePointKey = null;
+                });
+            })
+            .catch(err => {
+                console.error("地图加载失败:", err);
+            });
+    }
+});
+    </script>
+
+</body>
+</html>

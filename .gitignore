@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# 虚拟环境
+venv/
+
+# Django
+db.sqlite3
+/media/
+/staticfiles/
+
+# 工具
+ngrok/
+cloudflared/
